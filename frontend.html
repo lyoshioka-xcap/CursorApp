@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<!-- HTMLドキュメントであることを宣言します -->
+<html lang="ja">
+<!-- 日本語のページであることを指定します -->
+<head>
+    <!-- 文字コードをUTF-8に設定します -->
+    <meta charset="UTF-8">
+    <!-- ビューポートを設定して、モバイル端末でも適切に表示されるようにします -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- ブラウザのタブに表示されるタイトルを設定します -->
+    <title>Gemini チャットアプリ</title>
+    <!-- 簡単なスタイル（見た目）をCSSで定義します -->
+    <style>
+        /* ページ全体のフォントや余白を設定します */
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        /* チャットの履歴を表示するエリアのスタイルです。枠線や高さを指定しています */
+        #chat-history { border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: scroll; margin-bottom: 10px; background-color: #f9f9f9; }
+        /* ユーザーのメッセージのスタイルです。右寄せで青色にします */
+        .user-msg { color: #007bff; text-align: right; margin: 5px; padding: 5px; }
+        /* AIのメッセージのスタイルです。左寄せで緑色にします */
+        .ai-msg { color: #28a745; text-align: left; margin: 5px; padding: 5px; border-bottom: 1px solid #eee; }
+        /* 入力エリアとボタンをまとめるコンテナです */
+        .input-area { display: flex; gap: 10px; }
+    </style>
+</head>
+<body>
+    <!-- 画面のメイン見出しです -->
+    <h1>Geminiとおしゃべり</h1>
+
+    <!-- チャットの履歴が表示される場所（コンテナ）です -->
+    <div id="chat-history"></div>
+
+    <!-- 入力エリアです -->
+    <div class="input-area">
+        <!-- ユーザーがメッセージを入力するテキストボックスです -->
+        <input type="text" id="user-input" placeholder="メッセージを入力..." style="flex-grow: 1; padding: 10px;">
+        <!-- 送信ボタンです。クリックすると sendMessage 関数が動きます -->
+        <button onclick="sendMessage()" style="padding: 10px 20px;">送信</button>
+    </div>
+
+    <!-- JavaScriptのコードを記述するエリアです。ここで動きを作ります -->
+    <script>
+        // バックエンドのAPIのURLを指定します（Flaskサーバーのアドレス）
+        const API_URL = 'http://127.0.0.1:5000/api/chat';
+
+        // メッセージを送信する関数です（非同期関数として定義）
+        async function sendMessage() {
+            // 入力ボックスの要素をIDを使って取得します
+            const inputField = document.getElementById('user-input');
+            // 入力されたテキスト（値）を取得します
+            const message = inputField.value;
+            // チャット履歴の表示エリアの要素を取得します
+            const historyDiv = document.getElementById('chat-history');
+
+            // メッセージが空なら何もせずに終了します
+            if (!message) return;
+
+            // ユーザーのメッセージを画面（履歴エリア）に追加表示します
+            historyDiv.innerHTML += `<div class="user-msg"><strong>あなた:</strong> ${message}</div>`;
+            // 入力ボックスを空にして、次の入力をしやすくします
+            inputField.value = '';
+
+            try {
+                // Fetch APIを使ってバックエンドにデータを送信します
+                const response = await fetch(API_URL, {
+                    // HTTPメソッドはPOSTを使います（データを送るため）
+                    method: 'POST',
+                    // 送信するデータの形式がJSONであることをヘッダーで伝えます
+                    headers: { 'Content-Type': 'application/json' },
+                    // データをJSON文字列に変換して送ります
+                    body: JSON.stringify({ message: message })
+                });
+
+                // サーバーからのレスポンスをJSONとして解析（パース）します
+                const data = await response.json();
+
+                // エラーが含まれている場合はアラートを表示します
+                if (data.error) {
+                    alert('エラー: ' + data.error);
+                    historyDiv.innerHTML += `<div class="ai-msg" style="color:red;">エラー: ${data.error}</div>`;
+                } else {
+                    // AIからの返信を画面（履歴エリア）に追加表示します
+                    // 改行コードをHTMLの改行タグに変換して表示するとより見やすくなりますが、ここではシンプルにテキストとして表示します
+                    historyDiv.innerHTML += `<div class="ai-msg"><strong>Gemini:</strong> ${data.reply}</div>`;
+                }
+            } catch (error) {
+                // 通信エラーなどが起きた場合の処理です
+                console.error('通信エラー:', error);
+                historyDiv.innerHTML += `<div class="ai-msg" style="color:red;">システムエラーが発生しました</div>`;
+            }
+            
+            // 最新のメッセージが見えるようにスクロール位置を一番下に自動スクロールします
+            historyDiv.scrollTop = historyDiv.scrollHeight;
+        }
+
+        // Enterキーでも送信できるようにするおまけ機能です
+        document.getElementById('user-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
