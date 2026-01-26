@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Todo</title>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --text-secondary: #888888;
+            --border-radius: 12px;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            margin-top: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            font-weight: 700;
+        }
+
+        .input-group {
+            background: var(--card-bg);
+            padding: 16px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-row.main {
+            align-items: center;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 16px;
+            outline: none;
+            background: #fff;
+        }
+        
+        input[type="text"]:focus {
+            border-color: var(--primary-color);
+        }
+
+        textarea {
+            width: 100%;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 14px;
+            outline: none;
+            background: #fff;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 60px;
+            box-sizing: border-box;
+        }
+
+        textarea:focus {
+            border-color: var(--primary-color);
+        }
+
+        select {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            background: #fff;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* ステータスバッジの色定義 */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            white-space: nowrap;
+        }
+
+        .status-todo { background-color: #888; }
+        .status-waiting { background-color: #e6a23c; }
+        .status-doing { background-color: #409eff; }
+        .status-done { background-color: #67c23a; }
+
+        .task-item {
+            background: var(--card-bg);
+            margin-bottom: 12px;
+            padding: 16px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        .task-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .task-details {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            white-space: pre-wrap;
+            color: #555;
+            display: none; /* デフォルトは非表示 */
+        }
+        
+        .task-details.show {
+            display: block;
+        }
+
+        .toggle-details-btn {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            font-size: 12px;
+            padding: 0;
+            margin-top: 4px;
+        }
+
+        .task-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        /* 編集フォームの改善 */
+        .edit-form {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .edit-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        @media (max-width: 480px) {
+            .input-group {
+                flex-wrap: wrap;
+            }
+            input[type="date"] {
+                width: 100%;
+            }
+            button.add-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tasks</h1>
+        
+        <div class="input-group">
+            <div class="input-row main">
+                <input type="text" id="taskInput" placeholder="新しいタスクを入力..." autocomplete="off">
+                <select id="statusInput">
+                    <option value="todo">未着手</option>
+                    <option value="waiting">進行中(相手)</option>
+                    <option value="doing">進行中(自分)</option>
+                    <option value="done">完了</option>
+                </select>
+            </div>
+            <textarea id="detailsInput" placeholder="参考資料やメモがあればここに入力..."></textarea>
+            <div class="input-row">
+                <input type="date" id="dateInput" style="flex: 1;">
+                <button class="add-btn" onclick="addTask()">追加</button>
+            </div>
+        </div>
+
+        <ul class="task-list" id="taskList">
+            <!-- タスクがここに追加されます -->
+        </ul>
+    </div>
+
+    <script>
+        // DOM要素の取得
+        const taskInput = document.getElementById('taskInput');
+        const statusInput = document.getElementById('statusInput');
+        const detailsInput = document.getElementById('detailsInput');
+        const dateInput = document.getElementById('dateInput');
+        const taskList = document.getElementById('taskList');
+
+        // ステータスのラベル定義
+        const STATUS_LABELS = {
+            'todo': '未着手',
+            'waiting': '相手ボール',
+            'doing': '自分ボール',
+            'done': '完了'
+        };
+
+        // アプリ起動時に保存されたタスクを読み込む
+        document.addEventListener('DOMContentLoaded', loadTasks);
+
+        // Enterキー（Ctrl+Enter）でタスク追加
+        taskInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault(); // デフォルトの改行を防ぐ（textareaでない場合）
+                addTask();
+            }
+        });
+
+        // タスクを追加する関数
+        function addTask() {
+            const text = taskInput.value.trim();
+            const status = statusInput.value;
+            const details = detailsInput.value.trim();
+            const date = dateInput.value;
+            
+            if (text === '') return;
+
+            const task = {
+                id: Date.now(),
+                text: text,
+                status: status,
+                details: details,
+                dueDate: date
+            };
+
+            createTaskElement(task);
+            saveTask(task);
+
+            // 入力欄をクリア
+            taskInput.value = '';
+            detailsInput.value = '';
+            statusInput.value = 'todo';
+            dateInput.value = '';
+            taskInput.focus();
+        }
+
+        // タスクのHTML要素を作成して表示する関数
+        function createTaskElement(task) {
+            const li = document.createElement('li');
+            li.className = `task-item ${task.status === 'done' ? 'completed' : ''}`;
+            li.dataset.id = task.id;
+
+            // 期限表示用
+            let dateHtml = '';
+            if (task.dueDate) {
+                const today = new Date().toISOString().split('T')[0];
+                const isOverdue = task.dueDate < today && task.status !== 'done';
+                const formattedDate = new Date(task.dueDate).toLocaleDateString('ja-JP');
+                dateHtml = `<span class="due-date ${isOverdue ? 'overdue' : ''}">
+                    📅 ${formattedDate} ${isOverdue ? '(期限切れ)' : ''}
+                </span>`;
+            }
+
+            // 参考資料があれば表示ボタンを出す
+            const detailsHtml = task.details 
+                ? `<button class="toggle-details-btn" onclick="toggleDetails(${task.id})">📝 詳細を表示</button>
+                   <div class="task-details">${escapeHtml(task.details)}</div>` 
+                : '';
+
+            li.innerHTML = `
+                <div class="task-header">
+                    <div class="checkbox" onclick="toggleComplete(${task.id})"></div>
+                    
+                    <div class="task-content">
+                        <div class="task-meta">
+                            <span class="status-badge status-${task.status}">${STATUS_LABELS[task.status]}</span>
+                            <span class="task-text">${escapeHtml(task.text)}</span>
+                        </div>
+                        ${dateHtml}
+                        ${detailsHtml}
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="icon-btn" onclick="startEdit(${task.id})" title="編集">✏️</button>
+                        <button class="icon-btn delete" onclick="deleteTask(${task.id})" title="削除">🗑️</button>
+                    </div>
+                </div>
+
+                <div class="edit-form">
+                    <input type="text" class="edit-input text" value="${escapeHtml(task.text)}">
+                    <select class="edit-input status">
+                        <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>未着手</option>
+                        <option value="waiting" ${task.status === 'waiting' ? 'selected' : ''}>進行中(相手)</option>
+                        <option value="doing" ${task.status === 'doing' ? 'selected' : ''}>進行中(自分)</option>
+                        <option value="done" ${task.status === 'done' ? 'selected' : ''}>完了</option>
+                    </select>
+                    <textarea class="edit-input details" rows="3">${escapeHtml(task.details || '')}</textarea>
+                    <div class="edit-row">
+                        <input type="date" class="edit-input date" style="flex:1" value="${task.dueDate || ''}">
+                        <button class="icon-btn" onclick="saveEdit(${task.id})">💾 保存</button>
+                        <button class="icon-btn" onclick="cancelEdit(${task.id})">❌ キャンセル</button>
+                    </div>
+                </div>
+            `;
+
+            taskList.insertBefore(li, taskList.firstChild);
+        }
+
+        // 詳細の表示切り替え
+        function toggleDetails(id) {
+            const li = document.querySelector(`li[data-id="${id}"]`);
+            const detailsDiv = li.querySelector('.task-details');
+            const btn = li.querySelector('.toggle-details-btn');
+            
+            if (detailsDiv.classList.contains('show')) {
+                detailsDiv.classList.remove('show');
+                btn.textContent = '📝 詳細を表示';
+            } else {
+                detailsDiv.classList.add('show');
+                btn.textContent = '📝 詳細を閉じる';
+            }
+        }
+
+        // 完了状態の簡易切り替え（チェックボックス用）
+        function toggleComplete(id) {
+            const tasks = getStoredTasks();
+            const index = tasks.findIndex(t => t.id === id);
+            if (index !== -1) {
+                // 完了なら未着手に、それ以外なら完了にする
+                if (tasks[index].status === 'done') {
+                    tasks[index].status = 'todo';
+                } else {
+                    tasks[index].status = 'done';
+                }
+                localStorage.setItem('todo-tasks', JSON.stringify(tasks));
+                refreshTaskList();
+            }
+        }
+
+        // 編集モードを開始
+        function startEdit(id) {
+            const li = document.querySelector(`li[data-id="${id}"]`);
+            li.classList.add('editing');
+            li.querySelector('.task-header').style.display = 'none';
+            li.querySelector('.edit-form').style.display = 'flex';
+        }
+
+        // 編集をキャンセル
+        function cancelEdit(id) {
+            const li = document.querySelector(`li[data-id="${id}"]`);
+            li.classList.remove('editing');
+            li.querySelector('.task-header').style.display = 'flex';
+            li.querySelector('.edit-form').style.display = 'none';
+        }
+
+        // 編集を保存
+        function saveEdit(id) {
+            const li = document.querySelector(`li[data-id="${id}"]`);
+            const newText = li.querySelector('.edit-input.text').value.trim();
+            const newStatus = li.querySelector('.edit-input.status').value;
+            const newDetails = li.querySelector('.edit-input.details').value.trim();
+            const newDate = li.querySelector('.edit-input.date').value;
+
+            if (newText === '') return;
+
+            const tasks = getStoredTasks();
+            const taskIndex = tasks.findIndex(t => t.id === id);
+            
+            if (taskIndex !== -1) {
+                tasks[taskIndex].text = newText;
+                tasks[taskIndex].status = newStatus;
+                tasks[taskIndex].details = newDetails;
+                tasks[taskIndex].dueDate = newDate;
+                localStorage.setItem('todo-tasks', JSON.stringify(tasks));
+                
+                refreshTaskList();
+            }
+        }
+
+        // タスクを削除する関数
+        function deleteTask(id) {
+            if (!confirm('本当に削除しますか？')) return;
+            
+            const li = document.querySelector(`li[data-id="${id}"]`);
+            li.style.transform = 'translateX(20px)';
+            li.style.opacity = '0';
+
+            setTimeout(() => {
+                const tasks = getStoredTasks();
+                const updatedTasks = tasks.filter(task => task.id !== id);
+                localStorage.setItem('todo-tasks', JSON.stringify(updatedTasks));
+                refreshTaskList();
+            }, 200);
+        }
+
+        // リスト全体を再描画（状態更新時など）
+        function refreshTaskList() {
+            taskList.innerHTML = '';
+            loadTasks();
+        }
+
+        // ローカルストレージにタスクを保存する関数
+        function saveTask(task) {
+            const tasks = getStoredTasks();
+            tasks.unshift(task); // 新しいタスクを先頭に追加
+            localStorage.setItem('todo-tasks', JSON.stringify(tasks));
+        }
+
+        // ローカルストレージからタスクを取得する関数
+        function getStoredTasks() {
+            const stored = localStorage.getItem('todo-tasks');
+            return stored ? JSON.parse(stored) : [];
+        }
+
+        // 保存されたタスクを画面に表示する関数
+        function loadTasks() {
+            const tasks = getStoredTasks();
+            // 未完了のものを上に、完了済みを下に表示したい場合などのソートもここで可能
+            // 現状は作成日順（配列順）で表示
+            tasks.forEach(task => createTaskElement(task)); 
+        }
+
+        // XSS対策用エスケープ関数
+        function escapeHtml(unsafe) {
+            if (!unsafe) return "";
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
