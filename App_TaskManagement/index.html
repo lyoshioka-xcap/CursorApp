@@ -29,7 +29,7 @@
 
         .container {
             width: 100%;
-            max-width: 500px;
+            max-width: 600px;
             margin-top: 40px;
         }
 
@@ -57,7 +57,7 @@
         }
 
         .input-row.main {
-            align-items: center;
+            align-items: stretch;
         }
 
         input[type="text"] {
@@ -68,6 +68,7 @@
             font-size: 16px;
             outline: none;
             background: #fff;
+            min-width: 0;
         }
         
         input[type="text"]:focus {
@@ -93,23 +94,25 @@
         }
 
         select {
-            padding: 10px 16px;
+            padding: 10px 12px;
             border-radius: 8px;
             border: 1px solid #eee;
             background: #fff;
             font-size: 14px;
             outline: none;
             cursor: pointer;
+            flex-shrink: 0;
         }
 
         /* ステータスバッジの色定義 */
         .status-badge {
             padding: 4px 8px;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             color: white;
             white-space: nowrap;
+            display: inline-block;
         }
 
         .status-todo { background-color: #888; }
@@ -131,7 +134,7 @@
 
         .task-header {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 12px;
             width: 100%;
         }
@@ -160,11 +163,26 @@
             margin-top: 4px;
         }
 
+        .task-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 0;
+            padding-top: 2px;
+        }
+
         .task-meta {
             display: flex;
             align-items: center;
             gap: 8px;
             flex-wrap: wrap;
+        }
+
+        .task-text {
+            font-size: 16px;
+            word-break: break-all;
+            line-height: 1.5;
         }
         
         /* 編集フォームの改善 */
@@ -183,15 +201,49 @@
             gap: 8px;
         }
 
+        /* スマホ向けレスポンシブ対応 */
         @media (max-width: 480px) {
-            .input-group {
-                flex-wrap: wrap;
+            body {
+                padding: 16px;
             }
-            input[type="date"] {
+
+            .container {
+                margin-top: 20px;
+            }
+
+            .input-row.main {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            select {
                 width: 100%;
+                padding: 12px;
             }
+
             button.add-btn {
                 width: 100%;
+                padding: 12px;
+            }
+
+            .task-header {
+                gap: 10px;
+            }
+
+            .task-meta {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 4px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .icon-btn {
+                padding: 10px;
+                background-color: #f5f5f5;
             }
         }
     </style>
